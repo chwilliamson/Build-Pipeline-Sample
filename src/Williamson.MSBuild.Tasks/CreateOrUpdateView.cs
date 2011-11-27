@@ -28,17 +28,24 @@ namespace Williamson.MSBuild.Tasks
 
         protected override bool DoExecute()
         {
-            //Create ListView
-            if (this.JenkinsTasks.ViewExists(this.JobName))
+            try
             {
-                this.Log.LogMessage("{0} Exists", this.JobName);
+                //Create ListView
+                if (this.JenkinsTasks.ViewExists(this.JobName))
+                {
+                    this.Log.LogMessage("{0} Exists", this.JobName);
 
-               
+
+                }
+                else
+                {
+                    this.Log.LogMessage("{0} Not Exists", this.JobName);
+                    this.JenkinsTasks.CreatePipelineView(this.JobName, "", false, false, this.JobName, this.InitialJobName, 5, false);
+                }
             }
-            else
+            catch
             {
-                this.Log.LogMessage("{0} Not Exists", this.JobName);
-                this.JenkinsTasks.CreatePipelineView(this.JobName, "", false, false, this.JobName, this.InitialJobName, 5, false);
+                //swallow for now until i decide what needs to be done :)
             }
 
            

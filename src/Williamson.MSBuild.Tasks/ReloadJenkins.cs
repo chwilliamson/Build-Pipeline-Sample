@@ -27,7 +27,7 @@ namespace Williamson.MSBuild.Tasks
             catch (Exception ex)
             {
                 Log.LogErrorFromException(ex);
-                return false;
+                return true;
             }
         }
     }
