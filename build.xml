@@ -6,22 +6,26 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == ''">Release</Configuration>
     <JenkinsUrl Condition=" '$(JenkinsUrl)' == ''">http://localhost:9090</JenkinsUrl>
-    <JobName Condition=" '$(JobName)' == ''">Init (Template)</JobName>
+    <JobName Condition=" '$(JobName)' == ''">$([System.IO.Directory]::GetParent('$(MSBuildProjectDirectory)/../psuedo.txt').Name)</JobName>
     <JobPart>$([System.Text.RegularExpressions.Regex]::Match('$(JobName)','\((.*?)\)').Groups[1].Value)</JobPart>
     <InitJobName>$(JobName)</InitJobName>
     <!-- Init (jobname=master/branch/etc)-->
     <BuildJobName>Build ($(JobPart))</BuildJobName>
     <NUnitJobName>NUnit ($(JobPart))</NUnitJobName>
+    <Config>$([System.IO.File]::ReadAllText('../config.xml'))</Config>
+    <Repo>$([System.Text.RegularExpressions.Regex]::Match('$(Config)','&lt;url>(.*?)&lt;').Groups[1].Value)</Repo>
   </PropertyGroup>
 
   <UsingTask AssemblyFile="src/Williamson.MSBuild.Tasks/bin/$(Configuration)/Williamson.MSBuild.Tasks.dll" TaskName="Williamson.MSBuild.Tasks.ReloadJenkins" />
   <UsingTask AssemblyFile="src/Williamson.MSBuild.Tasks/bin/$(Configuration)/Williamson.MSBuild.Tasks.dll" TaskName="Williamson.MSBuild.Tasks.FileReplace" />
   <UsingTask AssemblyFile="src/Williamson.MSBuild.Tasks/bin/$(Configuration)/Williamson.MSBuild.Tasks.dll" TaskName="Williamson.MSBuild.Tasks.CreateOrUpdateView" />
-  
-  <Target Name="Test" DependsOnTargets="BuildTasks">
-    <Message Text="Yay: $(JobName), $(JobPart)" Importance="high"/>
-  </Target>
 
+  <Target Name="Test">   
+    
+     <Message Text="Repo: $(Repo) $(JobPart)"/>
+
+  </Target>
+  
   <Target Name="JenkinsBuild"
           Inputs="src/Jenkins.Jobs/Init (Template)/config.xml;src/Jenkins.Jobs/Build (Template)/config.xml;src/Jenkins.Jobs/NUnit (Template)/config.xml"
           Outputs="../config.xml;../../$(BuildJobName)/config.xml;../../$(NUnitJobName)/config.xml">
@@ -38,6 +42,12 @@
     <!-- Update the job 'Init (Template)' -->
     <Copy SourceFiles="src/Jenkins.Jobs/Init (Template)/config.xml"
           DestinationFiles="../config.xml"/>
+    
+    <!-- Get Current Rep Path -->    
+    <FileReplace
+            SrcFile="../config.xml"
+            OldValue="REPO_URL"
+            NewValue="$(REPO)"/>
 
     <!-- Change Downstream Job-->
     <FileReplace
@@ -45,6 +55,7 @@
             OldValue="&lt;childProjects>Build (Template)&lt;/childProjects>"
             NewValue="&lt;childProjects>$(BuildJobName)&lt;/childProjects>"/>
     
+    <!-- Update Branch -->
     <FileReplace
               SrcFile="../config.xml"
               OldValue="&lt;name>master&lt;/name>"
@@ -72,13 +83,12 @@
             SrcFile="../../$(NUnitJobName)/config.xml"
             OldValue="&lt;parentJobName>Build (Template)&lt;/parentJobName>"
             NewValue="&lt;parentJobName>$(BuildJobName)&lt;/parentJobName>"/>
-
+    
+    <!-- Automatically configure the pipeline view-->
+    <CallTarget Targets="ConfigurePipeline"/>
 
     <!-- Reload Configuration if a change in files has been detected -->
 
-    <!-- Automatically configure the pipeline view-->
-    <CallTarget Targets="ConfigurePipeline"/>
-    
     <CallTarget Targets="ReloadJenkins"/>
 
     <CallTarget Targets="Requeue"/>
