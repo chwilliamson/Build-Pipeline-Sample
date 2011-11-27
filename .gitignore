@@ -1,0 +1,8 @@
+src/Williamson.MSBuild.Tasks/obj/
+src/Williamson.MSBuild.Tasks/bin/
+src/Williamson.MSBuild.Tasks.Tests/bin/
+src/Williamson.MSBuild.Tasks.Tests/obj/
+Reports
+lib
+src/Main.suo
+src/packages

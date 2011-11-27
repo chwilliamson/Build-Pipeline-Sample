@@ -1,0 +1,118 @@
+<!-- Main Build File -->
+<Project
+    DefaultTargets="JenkinsBuild"
+		xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == ''">Release</Configuration>
+    <JenkinsUrl Condition=" '$(JenkinsUrl)' == ''">http://localhost:9090</JenkinsUrl>
+    <JobName Condition=" '$(JobName)' == ''">Init (Template)</JobName>
+    <JobPart>$([System.Text.RegularExpressions.Regex]::Match('$(JobName)','\((.*?)\)').Groups[1].Value)</JobPart>
+    <InitJobName>$(JobName)</InitJobName>
+    <!-- Init (jobname=master/branch/etc)-->
+    <BuildJobName>Build ($(JobPart))</BuildJobName>
+    <NUnitJobName>NUnit ($(JobPart))</NUnitJobName>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="src/Williamson.MSBuild.Tasks/bin/$(Configuration)/Williamson.MSBuild.Tasks.dll" TaskName="Williamson.MSBuild.Tasks.ReloadJenkins" />
+  <UsingTask AssemblyFile="src/Williamson.MSBuild.Tasks/bin/$(Configuration)/Williamson.MSBuild.Tasks.dll" TaskName="Williamson.MSBuild.Tasks.FileReplace" />
+  <UsingTask AssemblyFile="src/Williamson.MSBuild.Tasks/bin/$(Configuration)/Williamson.MSBuild.Tasks.dll" TaskName="Williamson.MSBuild.Tasks.CreateOrUpdateView" />
+  
+  <Target Name="Test" DependsOnTargets="BuildTasks">
+    <Message Text="Yay: $(JobName), $(JobPart)" Importance="high"/>
+  </Target>
+
+  <Target Name="JenkinsBuild"
+          Inputs="src/Jenkins.Jobs/Init (Template)/config.xml;src/Jenkins.Jobs/Build (Template)/config.xml;src/Jenkins.Jobs/NUnit (Template)/config.xml"
+          Outputs="../config.xml;../../$(BuildJobName)/config.xml;../../$(NUnitJobName)/config.xml">
+    <Message Text="Detected Pipeline Change for: $(JobName)" Importance="high"/>
+    <CallTarget Targets="UpdateJobs"/>
+  </Target>
+
+  <!-- Update the jobs since there is a change -->
+  <Target Name="UpdateJobs" DependsOnTargets="BuildTasks">
+
+    <!-- Maintain your jenkins jobs here -->
+    <Message Text="Updating Jobs: $(JobName)" Importance="high"/>
+
+    <!-- Update the job 'Init (Template)' -->
+    <Copy SourceFiles="src/Jenkins.Jobs/Init (Template)/config.xml"
+          DestinationFiles="../config.xml"/>
+
+    <!-- Change Downstream Job-->
+    <FileReplace
+            SrcFile="../config.xml"
+            OldValue="&lt;childProjects>Build (Template)&lt;/childProjects>"
+            NewValue="&lt;childProjects>$(BuildJobName)&lt;/childProjects>"/>
+    
+    <FileReplace
+              SrcFile="../config.xml"
+              OldValue="&lt;name>master&lt;/name>"
+              NewValue="&lt;name>$(JobPart)&lt;/name>"/>
+
+    <!-- Update job 'master' -->
+    <Copy SourceFiles="src/Jenkins.Jobs/Build (Template)/config.xml"
+          DestinationFolder="../../$(BuildJobName)"/>
+
+    <FileReplace
+            SrcFile="../../$(BuildJobName)/config.xml"
+            OldValue="&lt;parentJobName>Init (Template)&lt;/parentJobName>"
+            NewValue="&lt;parentJobName>$(InitJobName)&lt;/parentJobName>"/>
+
+    <FileReplace
+              SrcFile="../../$(BuildJobName)/config.xml"
+              OldValue="&lt;childProjects>NUnit (Template)&lt;/childProjects>"
+              NewValue="&lt;childProjects>$(NUnitJobName)&lt;/childProjects>"/>
+
+    <!-- Update job 'nunit' -->
+    <Copy SourceFiles="src/Jenkins.Jobs/NUnit (Template)/config.xml"
+          DestinationFolder="../../$(NUnitJobName)"/>
+
+    <FileReplace
+            SrcFile="../../$(NUnitJobName)/config.xml"
+            OldValue="&lt;parentJobName>Build (Template)&lt;/parentJobName>"
+            NewValue="&lt;parentJobName>$(BuildJobName)&lt;/parentJobName>"/>
+
+
+    <!-- Reload Configuration if a change in files has been detected -->
+
+    <!-- Automatically configure the pipeline view-->
+    <CallTarget Targets="ConfigurePipeline"/>
+    
+    <CallTarget Targets="ReloadJenkins"/>
+
+    <CallTarget Targets="Requeue"/>
+  </Target>
+
+  <!-- Will configure the pipeline view -->
+  <Target Name="ConfigurePipeline">
+    <CreateOrUpdateView JobName="$(JobPart)" Url="$(JenkinsUrl)"
+                        InitialJobName="$(InitJobName)"/>
+  </Target>
+
+  <!-- Build the MSBuild tasks project -->
+  <Target Name="BuildTasks">
+    <!-- Build MSBuildTasks -->
+    <MSBuild Projects="src/Williamson.MSBuild.Tasks/Williamson.MSBuild.Tasks.csproj"
+             Properties="Configuration=$(Configuration); SolutionDir=$(MSBuildProjectDirectory)\src\"/>
+  </Target>
+
+  <Target Name="Requeue" DependsOnTargets="BuildTasks">
+
+  </Target>
+
+  <!-- Reload Jenkins Configuration-->
+  <Target Name="ReloadJenkins" DependsOnTargets="BuildTasks">
+    <ReloadJenkins Url="$(JenkinsUrl)"/>
+  </Target>
+
+  <!-- Build the pipeline sample-->
+  <Target Name="SolutionBuild">
+    <MSBuild Projects="src/Main.sln"/>
+  </Target>
+
+  <Target Name="RunTests" DependsOnTargets="SolutionBuild">
+    <MSBuild Projects="src/Main.sln" Properties="RunTests=true"/>
+  </Target>
+
+</Project>

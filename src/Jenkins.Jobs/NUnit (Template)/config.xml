@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Runs NUnit Tests</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.cloneworkspace.CloneWorkspaceSCM">
+    <parentJobName>Build (master)</parentJobName>
+    <criteria>Any</criteria>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.plugins.msbuild.MsBuildBuilder>
+      <msBuildName>.NET 4</msBuildName>
+      <msBuildFile>build.xml</msBuildFile>
+      <cmdLineArgs>/target:RunTests</cmdLineArgs>
+    </hudson.plugins.msbuild.MsBuildBuilder>
+  </builders>
+  <publishers> 
+	<hudson.plugins.nunit.NUnitPublisher>
+      <testResultsPattern>Reports/*.xml</testResultsPattern>
+      <debug>false</debug>
+      <keepJUnitReports>false</keepJUnitReports>
+      <skipJUnitArchiver>false</skipJUnitArchiver>
+    </hudson.plugins.nunit.NUnitPublisher> 
+  </publishers>
+  <buildWrappers/>
+</project>

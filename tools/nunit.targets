@@ -1,0 +1,18 @@
+<Project
+		xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		 <PropertyGroup>  
+			<RunTests Condition=" '$(RunTests)' == ''">false</RunTests>
+			<ReportDir Condition=" '$(ReportDir)' == ''">$(SolutionDir)../Reports/</ReportDir>
+			<ReportFile>$(ReportDir)$(ProjectName).xml</ReportFile>
+		</PropertyGroup>
+		<Target Name="AfterBuild" Condition="$(RunTests)">
+			<Message Importance="high" Text="Running Tests: $(ReportDir)"/>
+				<MakeDir Directories="$(ReportDir)"/>
+				<Exec WorkingDirectory="$(SolutionDir)..\lib\NUnit.2.5.10.11092\tools\" 
+				Command="nunit-console &quot;$(ProjectPath)&quot; /xml:&quot;$(ReportFile)&quot;"/> 
+		</Target>
+		
+		<Target Name="Clean">
+			<Delete Files="$(ReportFile)"/>				
+		</Target>
+</Project>

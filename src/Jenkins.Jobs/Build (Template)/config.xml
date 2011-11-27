@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.cloneworkspace.CloneWorkspaceSCM">
+    <parentJobName>Init (Template)</parentJobName>
+    <criteria>Any</criteria>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <concurrentBuild>false</concurrentBuild>
+  <builders/>
+  <publishers>
+	<hudson.tasks.BuildTrigger>
+      <childProjects>NUnit (Template)</childProjects>
+      <threshold>
+        <name>SUCCESS</name>
+        <ordinal>0</ordinal>
+        <color>BLUE</color>
+      </threshold>
+    </hudson.tasks.BuildTrigger>
+	 <hudson.plugins.cloneworkspace.CloneWorkspacePublisher>
+      <workspaceGlob></workspaceGlob>
+      <criteria>Any</criteria>
+    </hudson.plugins.cloneworkspace.CloneWorkspacePublisher>    
+  </publishers>
+  <buildWrappers/>
+</project>
